@@ -5,7 +5,6 @@ use reqwest;
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
@@ -139,7 +138,7 @@ fn sync_domain(settings: Settings) {
         current_ipaddr,
     );
 
-    reqwest::blocking::get(&format!("{}/ok", base_url)).unwrap();
+    reqwest::blocking::get(&format!("{}/0", base_url)).unwrap();
 }
 
 #[derive(Parser, Debug)]
@@ -156,12 +155,12 @@ fn main() {
 
     let settings = Settings::new(config).unwrap();
 
-    sync_domain(settings.clone());
-
-    // let mut scheduler = Scheduler::new();
-    // scheduler.every(5.minute()).run(move || sync_domain(settings.clone()));
-    // loop {
-    //     scheduler.run_pending();
-    //     thread::sleep(Duration::from_millis(1000));
-    // }
+    let mut scheduler = Scheduler::new();
+    scheduler
+        .every(15.minute())
+        .run(move || sync_domain(settings.clone()));
+    loop {
+        scheduler.run_pending();
+        thread::sleep(Duration::from_millis(1000));
+    }
 }

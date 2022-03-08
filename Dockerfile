@@ -3,8 +3,8 @@
 #### Rust Builder Image ####
 FROM rust:latest AS rustbuild
 
-RUN mkdir -p /matt
-WORKDIR /matt
+RUN mkdir -p /pmddns
+WORKDIR /pmddns
 
 COPY Cargo.toml .
 COPY src/ src/
@@ -13,20 +13,15 @@ RUN cargo build --release
 
 
 #### Runtime Image ####
-FROM nginx:latest
+FROM debian:11-slim
 
 RUN mkdir -p /pmddns
 WORKDIR /pmddns
 
-RUN apt-get update && apt-get install -y supervisor rsync
+RUN apt-get update && apt-get install -y supervisor
 
-RUN rm -rf /usr/share/nginx/html/index.html
-COPY nginx.conf /etc/nginx/
 COPY supervisord.conf .
-COPY --from=rustbuild /matt/target/release/matt .
+COPY --from=rustbuild /pmddns/target/release/poormans-ddns .
 
-VOLUME /usr/share/nginx/html/mirrors
-VOLUME /matt/config
-EXPOSE 80
-
-CMD ["supervisord", "-c", "/matt/supervisord.conf"]
+VOLUME /pmddns/config
+CMD ["supervisord", "-c", "/pmddns/supervisord.conf"]
