@@ -18,17 +18,14 @@ use std::time::Duration;
 const HEALTHCHECK_HOST: &str = "https://hc-ping.com";
 
 #[derive(Clone, Debug, Deserialize)]
-struct Repo {
-    rsync: String,
-    healthcheck_uuid: String,
-    excludes: Option<Vec<String>>,
+struct DomainSettings {
+    domain: String,
+    healthcheck_uuid: String
 }
 
 #[derive(Clone, Debug, Deserialize)]
 struct Settings {
-    destpath: String,
-    rsync_opts: Vec<String>,
-    repos: HashMap<String, Repo>,
+    domains: HashMap<String, DomainSettings>,
 }
 
 impl Settings {
@@ -37,23 +34,18 @@ impl Settings {
     }
 }
 
-fn sync_repo(repo: Repo, name: String, destpath: String, opts: Vec<String>) {
-    let base_url = format!("{}/{}", HEALTHCHECK_HOST, repo.healthcheck_uuid);
+fn get_dns_ipaddr() {
+}
+
+fn get_current_ipaddr() {
+}
+
+fn sync_domain(name: String, domain_settings: DomainSettings) {
+    let base_url = format!("{}/{}", HEALTHCHECK_HOST, domain_settings.healthcheck_uuid);
     reqwest::blocking::get(&format!("{}/start", base_url)).unwrap();
 
-    let mut command = Command::new("rsync");
-    for opt in opts.iter() {
-        command.arg(opt.clone());
-    }
-
-    if let Some(excludes) = repo.excludes {
-        for exclude in excludes {
-            command.arg(format!("--exclude=\"{}\"", exclude));
-        }
-    }
-
-    command.arg(repo.rsync);
-    command.arg(format!("{}/{}", destpath, name));
+    let dns_ipaddr = get_current_domain_ipaddr();
+    let current_ipaddr = get_current_ipaddr();
 
     println!("Syncing {} with command {:?}", name, command);
     let result = retry(delay::Fixed::from_millis(300000).take(5), || {
@@ -81,7 +73,7 @@ fn sync_repo(repo: Repo, name: String, destpath: String, opts: Vec<String>) {
 }
 
 fn main() {
-    let matches = App::new("Mirror All The Things")
+    let matches = App::new("Poorman's DDNS")
         .arg(
             Arg::with_name("config")
                 .short("c")
@@ -102,19 +94,14 @@ fn main() {
 
     let mut scheduler = Scheduler::new();
 
-    for (name, repo) in settings.repos.iter() {
-        let name = name.clone();
-        let repo = repo.clone();
-        let destpath = settings.destpath.clone();
-        let opts = settings.rsync_opts.clone();
-
+    settings.domains.into_iter().for_each(|(name, domain_settings)| {
         scheduler
-            .every(1.hour())
-            .run(move || sync_repo(repo.clone(), name.clone(), destpath.clone(), opts.clone()));
-    }
+            .every(5.minute())
+            .run(|| sync_domain(name, domain_settings));
+    });
 
     loop {
         scheduler.run_pending();
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(1000));
     }
 }
