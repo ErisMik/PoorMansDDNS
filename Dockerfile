@@ -1,4 +1,4 @@
-# Mirror All The Things Dockerfile
+# Poorman's DDNS Dockerfile
 
 #### Rust Builder Image ####
 FROM rust:latest AS rustbuild
@@ -15,8 +15,8 @@ RUN cargo build --release
 #### Runtime Image ####
 FROM nginx:latest
 
-RUN mkdir -p /matt
-WORKDIR /matt
+RUN mkdir -p /pmddns
+WORKDIR /pmddns
 
 RUN apt-get update && apt-get install -y supervisor rsync
 

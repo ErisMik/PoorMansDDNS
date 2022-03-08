@@ -1,1 +1,1 @@
-# Mirror ALL the THINGS
+# Poorman's DDNS
