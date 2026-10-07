@@ -6,21 +6,20 @@ FROM rust:latest AS rustbuild
 RUN mkdir -p /pmddns
 WORKDIR /pmddns
 
-COPY Cargo.toml .
-COPY src/ src/
+COPY app/ .
 
 RUN cargo build --release
 
 
 #### Runtime Image ####
-FROM debian:11-slim
+FROM debian:12-slim
 
 RUN mkdir -p /pmddns
 WORKDIR /pmddns
 
 RUN apt-get update && apt-get install -y supervisor
 
-COPY supervisord.conf .
+COPY config/supervisord.conf .
 COPY --from=rustbuild /pmddns/target/release/poormans-ddns .
 
 VOLUME /pmddns/config
