@@ -2,7 +2,7 @@ use clap::Parser;
 use clokwerk::{Scheduler, TimeUnits};
 use config;
 use reqwest;
-use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::header::AUTHORIZATION;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::thread;
@@ -57,33 +57,29 @@ struct CloudflareDNSPatchRequest {
 
 fn cloudflare_get_request(
     auth_key: &str,
-    auth_email: &str,
+    _auth_email: &str,
     url: &str,
 ) -> reqwest::blocking::Response {
     let client = reqwest::blocking::Client::new();
 
-    let mut headers = HeaderMap::new();
-    headers.insert("X-Auth-Key", HeaderValue::from_str(auth_key).unwrap());
-    headers.insert("X-Auth-Email", HeaderValue::from_str(auth_email).unwrap());
-
-    return client.get(url).headers(headers).send().unwrap();
+    return client
+        .get(url)
+        .header(AUTHORIZATION, format!("Bearer {auth_key}"))
+        .send()
+        .unwrap();
 }
 
 fn cloudflare_patch_request(
     auth_key: &str,
-    auth_email: &str,
+    _auth_email: &str,
     url: &str,
     body: String,
 ) -> reqwest::blocking::Response {
     let client = reqwest::blocking::Client::new();
 
-    let mut headers = HeaderMap::new();
-    headers.insert("X-Auth-Key", HeaderValue::from_str(auth_key).unwrap());
-    headers.insert("X-Auth-Email", HeaderValue::from_str(auth_email).unwrap());
-
     return client
         .patch(url)
-        .headers(headers)
+        .header(AUTHORIZATION, format!("Bearer {auth_key}"))
         .body(body)
         .send()
         .unwrap();
